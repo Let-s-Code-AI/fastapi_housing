@@ -38,11 +38,7 @@ def load_data():
         (df_clean['rooms'] <= 10)  # maximum 10 rooms
     ]
     
-    print(f"Loaded {len(df_clean)} apartments from CSV")
-    print(f"Price range: {df_clean['price_total_zl'].min():,.0f} - {df_clean['price_total_zl'].max():,.0f} PLN")
-    print(f"Area range: {df_clean['area_m2'].min():.1f} - {df_clean['area_m2'].max():.1f} m²")
-    print(f"Rooms range: {df_clean['rooms'].min()} - {df_clean['rooms'].max()}")
-    
+ 
     return df_clean
 
 
