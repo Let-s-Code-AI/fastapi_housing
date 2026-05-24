@@ -1,6 +1,8 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from functools import lru_cache
+from typing import Optional, List
 
 import models
 from database import engine, SessionLocal
@@ -47,6 +49,38 @@ def create_offer(offer: models.OfferCreate, db: Session = Depends(get_db)):
 @lru_cache(maxsize=32)  # cache’owanie wyników
 def read_offers(db: Session = Depends(get_db)):
     return db.query(models.OfferDB).all()
+
+# Wyszukiwanie ofert
+@app.get("/offers/search", response_model=List[models.Offer])
+def search_offers(
+    locality: Optional[str] = Query(None, description="Nazwa miejscowości (częściowe dopasowanie)"),
+    rooms_min: Optional[int] = Query(None, ge=1, description="Minimalna liczba pokoi"),
+    rooms_max: Optional[int] = Query(None, ge=1, description="Maksymalna liczba pokoi"),
+    area_min: Optional[float] = Query(None, gt=0, description="Minimalna powierzchnia (m²)"),
+    area_max: Optional[float] = Query(None, gt=0, description="Maksymalna powierzchnia (m²)"),
+    price_min: Optional[int] = Query(None, ge=0, description="Minimalna cena (zł)"),
+    price_max: Optional[int] = Query(None, ge=0, description="Maksymalna cena (zł)"),
+    limit: int = Query(50, ge=1, le=500, description="Maksymalna liczba wyników"),
+    db: Session = Depends(get_db),
+):
+    filters = []
+    if locality:
+        filters.append(models.OfferDB.locality.ilike(f"%{locality}%"))
+    if rooms_min is not None:
+        filters.append(models.OfferDB.rooms >= rooms_min)
+    if rooms_max is not None:
+        filters.append(models.OfferDB.rooms <= rooms_max)
+    if area_min is not None:
+        filters.append(models.OfferDB.area_m2 >= area_min)
+    if area_max is not None:
+        filters.append(models.OfferDB.area_m2 <= area_max)
+    if price_min is not None:
+        filters.append(models.OfferDB.price_total_zl >= price_min)
+    if price_max is not None:
+        filters.append(models.OfferDB.price_total_zl <= price_max)
+
+    return db.query(models.OfferDB).filter(and_(*filters)).limit(limit).all()
+
 
 # Predykcja ceny
 @app.post("/predict/")
