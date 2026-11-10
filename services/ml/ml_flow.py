@@ -3,7 +3,7 @@ import pickle
 import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LinearRegression
-from ml import MODEL_PATH, load_data
+from ml import MODEL_PATH, get_model, load_data, predict_price
 
 def train_model():
     """Train the linear regression model on real data, track with MLflow, and save it"""
@@ -42,33 +42,15 @@ def train_model():
         model_path = MODEL_PATH
         with open(model_path, 'wb') as f:
             pickle.dump(model, f)
+        # Po retrainie kolejne predykcje mają użyć nowego modelu
+        get_model.cache_clear()
         print(f"Model trained on {len(X)} samples and saved to {model_path}")
         
         return model
 
 
-def load_model():
-    """Load the trained model from pickle file"""
-    model_path = MODEL_PATH
-    if model_path.exists():
-        with open(model_path, 'rb') as f:
-            model = pickle.load(f)
-        return model
-    else:
-        print("Model file not found. Training new model...")
-        return train_model()
-
-
-def predict_price(area_m2: float, rooms: int):
-    """Predict price using the trained model"""
-    model = load_model()
-    return model.predict([[area_m2, rooms]])[0]
-
-
 def test_model():
     """Test the trained model with sample predictions"""
-    model = load_model()
-    
     test_cases = [
         (50, 2),
         (70, 3),

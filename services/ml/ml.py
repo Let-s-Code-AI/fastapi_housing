@@ -1,5 +1,6 @@
 import os
 import pickle
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -78,6 +79,8 @@ def train_model():
     model_path = MODEL_PATH
     with open(model_path, 'wb') as f:
         pickle.dump(model, f)
+    # Po retrainie kolejne predykcje mają użyć nowego modelu
+    get_model.cache_clear()
     
     print(f"Model trained on {len(X)} samples and saved to {model_path}")
     return model
@@ -95,16 +98,20 @@ def load_model():
         return train_model()
 
 
+@lru_cache(maxsize=1)
+def get_model():
+    """Model wczytany raz na proces (cache); `get_model.cache_clear()` wymusza ponowne wczytanie."""
+    return load_model()
+
+
 def predict_price(area_m2: float, rooms: int):
     """Predict price using the trained model"""
-    model = load_model()
+    model = get_model()
     return model.predict([[area_m2, rooms]])[0]
 
 
 def test_model():
     """Test the trained model with sample predictions"""
-    model = load_model()
-    
     # Test with some sample apartments
     test_cases = [
         (50, 2),   # 50 m², 2 rooms
