@@ -11,58 +11,72 @@ Projekt FastAPI do przewidywania cen mieszkań we Wrocławiu na podstawie powier
 
 ## Wymagania
 
-- Python 3.8+
-- pip (Python package manager)
+- Python 3.9+
+- [uv](https://docs.astral.sh/uv/)
 
 ## Instalacja
 
-1. **Sklonuj repozytorium:**
+Repo to monorepo – **uv workspace** z dwoma serwisami i jednym środowiskiem (`.venv` + `uv.lock` w katalogu głównym).
+
+1. **Sklonuj repozytorium i zainstaluj zależności:**
 ```bash
 git clone <repository-url>
-cd FastAPIProject
+cd fastapi_housing
+uv sync --all-packages
 ```
 
-2. **Zainstaluj zależności:**
-```bash
-pip install -e .
-```
+2. **Dostarcz dane CSV** – patrz [data/README.md](data/README.md).
 
 3. **Utwórz bazę danych:**
 ```bash
-python create_db.py
+uv run --directory services/api python create_db.py
 ```
 
-4. **Wytrenuj model ML:**
+4. **(Opcjonalnie) przetrenuj model ML** – `model.pkl` jest w repo:
 ```bash
-python ml.py
+uv run --directory services/ml python ml.py
 ```
 
 ## Uruchomienie
 
 1. **Uruchom serwer FastAPI:**
 ```bash
-uvicorn main:app --reload
+uv run --directory services/api uvicorn main:app --reload
 ```
 
 2. **Otwórz dokumentację API:**
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
+## Testy
+
+```bash
+uv run --directory services/ml pytest
+uv run --directory services/api pytest
+```
+
 ## Struktura projektu
 
 ```
-FastAPIProject/
+fastapi_housing/
+├── pyproject.toml                 # Root uv workspace (członkowie: services/*)
+├── uv.lock                        # Wspólny lock zależności
 ├── data/
-│   └── adresowo_wroclaw_all.csv    # Dane mieszkań z Wrocławia
-├── main.py                         # Główny plik FastAPI
-├── models.py                       # Modele SQLAlchemy i Pydantic
-├── database.py                     # Konfiguracja bazy danych
-├── ml.py                          # Model Machine Learning
-├── create_db.py                   # Skrypt do tworzenia bazy danych
-├── pyproject.toml                 # Konfiguracja projektu i zależności
-├── offers.db                      # Baza danych SQLite (generowana)
-├── model.pkl                      # Wytrenowany model ML (generowany)
-└── README.md                      # Ten plik
+│   ├── README.md                  # Skąd wziąć CSV
+│   └── adresowo_wroclaw_all.csv   # Dane (poza gitem)
+└── services/
+    ├── api/                       # Pakiet housing-api
+    │   ├── main.py                # Aplikacja FastAPI
+    │   ├── models.py              # Modele SQLAlchemy i Pydantic
+    │   ├── database.py            # Konfiguracja bazy (offers.db obok pliku)
+    │   ├── create_db.py           # Tworzenie i zasilanie bazy z CSV
+    │   ├── curl_requests.sh       # Smoke-test endpointów
+    │   └── tests/
+    └── ml/                        # Pakiet housing-ml
+        ├── ml.py                  # Ładowanie danych, trening, predict_price
+        ├── ml_flow.py             # Trening śledzony w MLflow
+        ├── model.pkl              # Wytrenowany model
+        └── tests/
 ```
 
 ## API Endpoints
@@ -134,14 +148,14 @@ Projekt wykorzystuje dane z portalu Adresowo.pl zawierające:
 ## Rozwój
 
 ### Dodawanie nowych funkcji ML:
-1. Zmodyfikuj `ml.py` aby dodać nowe cechy
-2. Zaktualizuj `models.py` jeśli potrzebne
-3. Przetrenuj model: `python ml.py`
+1. Zmodyfikuj `services/ml/ml.py` aby dodać nowe cechy
+2. Zaktualizuj `services/api/models.py` jeśli potrzebne
+3. Przetrenuj model: `uv run --directory services/ml python ml.py`
 
 ### Dodawanie nowych endpointów API:
-1. Dodaj nowe funkcje w `main.py`
-2. Zaktualizuj modele w `models.py` jeśli potrzebne
-3. Przetestuj endpointy w Swagger UI
+1. Dodaj nowe funkcje w `services/api/main.py`
+2. Zaktualizuj modele w `services/api/models.py` jeśli potrzebne
+3. Dodaj testy w `services/api/tests/` i przetestuj endpointy w Swagger UI
 
 ## Licencja
 
