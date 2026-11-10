@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from database import Base
 
 
@@ -26,10 +26,10 @@ class Offer(BaseModel):
 
 class OfferCreate(BaseModel):
     locality: str
-    rooms: int
-    area_m2: float
+    rooms: int = Field(ge=1, description="Liczba pokoi (co najmniej 1)")
+    area_m2: float = Field(gt=0, description="Powierzchnia w m² (większa od 0)")
 
 
 class PricePrediction(BaseModel):
-    area_m2: float
-    rooms: int
+    area_m2: float = Field(gt=0, description="Powierzchnia w m² (większa od 0)")
+    rooms: int = Field(ge=1, description="Liczba pokoi (co najmniej 1)")
