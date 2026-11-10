@@ -30,7 +30,8 @@ def test_populate_database_filters_and_inserts(tmp_path, monkeypatch, capsys):
         f"{LOCALITY},3,70,\"650,000\"\n"      # poprawny – cena z przecinkiem
         f"{LOCALITY},2,5,300000\n"            # za mała powierzchnia
         f"{LOCALITY},2,50,abc\n"              # cena nienumeryczna
-        f"{LOCALITY},,50,300000\n",           # brak liczby pokoi
+        f"{LOCALITY},,50,300000\n"            # brak liczby pokoi
+        ",2,50,300000\n",                     # brak locality
         encoding="utf-8",
     )
     monkeypatch.setattr(create_db, "CSV_PATH", csv)
