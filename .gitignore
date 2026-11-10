@@ -134,7 +134,8 @@ dmypy.json
 *.sqlite3
 
 # Data files (if they contain sensitive data)
-data/
+data/*
+!data/README.md
 *.csv
 *.json
 *.xlsx

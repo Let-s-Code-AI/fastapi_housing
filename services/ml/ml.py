@@ -1,14 +1,23 @@
-import numpy as np
-import pandas as pd
+import os
 import pickle
-from sklearn.linear_model import LinearRegression
 from pathlib import Path
 
+import pandas as pd
+from sklearn.linear_model import LinearRegression
 
-def load_data():
+# Ścieżki liczone względem pliku, a nie CWD
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "model.pkl"
+CSV_PATH = Path(os.environ.get(
+    "HOUSING_CSV_PATH",
+    BASE_DIR.parents[1] / "data" / "adresowo_wroclaw_all.csv",
+))
+
+
+def load_data(csv_path: Path = CSV_PATH):
     """Load and preprocess data from CSV file"""
-    csv_path = Path("data/adresowo_wroclaw_all.csv")
-    
+    csv_path = Path(csv_path)
+
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV file not found at {csv_path}")
     
@@ -61,7 +70,7 @@ def train_model():
     print(f"Model intercept: {model.intercept_:.2f}")
     
     # Save model to pickle file
-    model_path = Path("model.pkl")
+    model_path = MODEL_PATH
     with open(model_path, 'wb') as f:
         pickle.dump(model, f)
     
@@ -71,7 +80,7 @@ def train_model():
 
 def load_model():
     """Load the trained model from pickle file"""
-    model_path = Path("model.pkl")
+    model_path = MODEL_PATH
     if model_path.exists():
         with open(model_path, 'rb') as f:
             model = pickle.load(f)

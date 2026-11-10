@@ -1,7 +1,7 @@
 from database import engine, Base
 from models import OfferDB
 import pandas as pd
-from pathlib import Path
+from ml import CSV_PATH
 
 def create_database():
     """Create database tables"""
@@ -19,7 +19,7 @@ def populate_database():
     
     try:
         # Load CSV data
-        csv_path = Path("data/adresowo_wroclaw_all.csv")
+        csv_path = CSV_PATH
         if not csv_path.exists():
             print(f"CSV file not found at {csv_path}")
             return

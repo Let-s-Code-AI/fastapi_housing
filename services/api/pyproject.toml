@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "housing-api"
+version = "0.1.0"
+description = "API FastAPI do przewidywania cen mieszkań we Wrocławiu (dane z Adresowo.pl)"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.68.0",
+    "uvicorn>=0.15.0",
+    "sqlalchemy>=1.4.0",
+    "pydantic>=1.8.0",
+    "pandas>=1.5.0",
+    "housing-ml",
+]
+
+[tool.uv.sources]
+housing-ml = { workspace = true }
+
+[tool.setuptools]
+py-modules = ["main", "models", "database", "create_db"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

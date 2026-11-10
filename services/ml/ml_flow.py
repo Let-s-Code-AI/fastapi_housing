@@ -1,10 +1,9 @@
 import pickle
-from pathlib import Path
 
 import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LinearRegression
-from ml import load_data
+from ml import MODEL_PATH, load_data
 
 def train_model():
     """Train the linear regression model on real data, track with MLflow, and save it"""
@@ -40,7 +39,7 @@ def train_model():
         mlflow.sklearn.log_model(model, "model")
         
         # (Opcjonalnie: nadal zapisujemy pickle lokalnie)
-        model_path = Path("model.pkl")
+        model_path = MODEL_PATH
         with open(model_path, 'wb') as f:
             pickle.dump(model, f)
         print(f"Model trained on {len(X)} samples and saved to {model_path}")
@@ -50,7 +49,7 @@ def train_model():
 
 def load_model():
     """Load the trained model from pickle file"""
-    model_path = Path("model.pkl")
+    model_path = MODEL_PATH
     if model_path.exists():
         with open(model_path, 'rb') as f:
             model = pickle.load(f)
