@@ -58,3 +58,11 @@ def test_offer_schema_reads_orm_attributes():
     assert Offer.model_validate(db_offer).model_dump() == {
         "id": 1, "locality": "Wrocław", "rooms": 2, "area_m2": 50.0, "price_total_zl": 500000,
     }
+
+
+def test_lifespan_loads_model_on_startup():
+    import ml
+
+    ml.get_model.cache_clear()
+    with TestClient(app):
+        assert ml.get_model.cache_info().currsize == 1

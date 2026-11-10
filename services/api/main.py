@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
@@ -5,12 +7,20 @@ from typing import Optional, List
 
 import models
 from database import engine, SessionLocal
-from ml import predict_price
+from ml import get_model, predict_price
 
 # Utwórz tabele
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Housing API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Wczytaj model ML raz przy starcie – brak model.pkl wyjdzie od razu, nie w pierwszym requeście
+    get_model()
+    yield
+
+
+app = FastAPI(title="Housing API", lifespan=lifespan)
 
 # Dependency – sesja DB
 def get_db():
