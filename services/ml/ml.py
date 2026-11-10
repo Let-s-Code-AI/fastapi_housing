@@ -14,41 +14,46 @@ CSV_PATH = Path(os.environ.get(
 ))
 
 
+# Kolumny wymagane do treningu oraz progi odrzucające nierealistyczne oferty
+REQUIRED_COLUMNS = ("rooms", "area_m2", "price_total_zl")
+AREA_MIN, AREA_MAX = 10, 500             # m², przedział otwarty
+PRICE_MIN, PRICE_MAX = 100_000, 5_000_000  # PLN, przedział otwarty
+ROOMS_MIN, ROOMS_MAX = 1, 10              # przedział domknięty
+
+
+def clean_offers(df: pd.DataFrame, required=REQUIRED_COLUMNS) -> pd.DataFrame:
+    """Wspólne czyszczenie ofert z CSV (trening modelu i import do bazy).
+
+    Usuwa wiersze z brakami w kolumnach `required`, zamienia cenę zapisaną
+    jako tekst ("800 000", "650,000") na liczbę i odfiltrowuje wartości
+    spoza realistycznych przedziałów.
+    """
+    df_clean = df.dropna(subset=list(required)).copy()
+
+    df_clean["price_total_zl"] = pd.to_numeric(
+        df_clean["price_total_zl"].astype(str).str.replace(" ", "").str.replace(",", ""),
+        errors="coerce",
+    )
+    df_clean = df_clean.dropna(subset=["price_total_zl"])
+
+    return df_clean[
+        (df_clean["area_m2"] > AREA_MIN)
+        & (df_clean["area_m2"] < AREA_MAX)
+        & (df_clean["price_total_zl"] > PRICE_MIN)
+        & (df_clean["price_total_zl"] < PRICE_MAX)
+        & (df_clean["rooms"] >= ROOMS_MIN)
+        & (df_clean["rooms"] <= ROOMS_MAX)
+    ]
+
+
 def load_data(csv_path: Path = CSV_PATH):
-    """Load and preprocess data from CSV file"""
+    """Wczytaj CSV i oczyść dane do treningu (patrz `clean_offers`)."""
     csv_path = Path(csv_path)
 
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV file not found at {csv_path}")
-    
-    # Load the CSV data
-    df = pd.read_csv(csv_path)
-    
-    # Clean the data - remove rows with missing values in key columns
-    df_clean = df.dropna(subset=['rooms', 'area_m2', 'price_total_zl'])
-    
-    # Convert price from string to numeric (remove spaces and convert)
-    # Handle different price formats: "800 000", "800000", etc.
-    df_clean['price_total_zl'] = df_clean['price_total_zl'].astype(str).str.replace(' ', '').str.replace(',', '')
-    
-    # Convert to numeric, handling any remaining non-numeric values
-    df_clean['price_total_zl'] = pd.to_numeric(df_clean['price_total_zl'], errors='coerce')
-    
-    # Remove rows where price conversion failed (NaN values)
-    df_clean = df_clean.dropna(subset=['price_total_zl'])
 
-    # Filter out unrealistic values (optional data cleaning)
-    df_clean = df_clean[
-        (df_clean['area_m2'] > 10) &  # minimum 10 m²
-        (df_clean['area_m2'] < 500) &  # maximum 500 m²
-        (df_clean['price_total_zl'] > 100000) &  # minimum 100k PLN
-        (df_clean['price_total_zl'] < 5000000) &  # maximum 5M PLN
-        (df_clean['rooms'] > 0) &  # at least 1 room
-        (df_clean['rooms'] <= 10)  # maximum 10 rooms
-    ]
-    
- 
-    return df_clean
+    return clean_offers(pd.read_csv(csv_path))
 
 
 def train_model():

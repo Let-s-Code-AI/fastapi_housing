@@ -40,3 +40,31 @@ def test_load_data_cleans_and_filters(tmp_path):
 def test_load_data_missing_file_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         ml.load_data(tmp_path / "brak.csv")
+
+
+def _raw_offers():
+    return pd.DataFrame(
+        {
+            "locality": ["A", None, "C", "D"],
+            "rooms": [1, 2, 10, 11],
+            "area_m2": [30.0, 50.0, 120.0, 150.0],
+            "price_total_zl": ["300 000", "450,000", "1200000", "1500000"],
+        }
+    )
+
+
+def test_clean_offers_default_keeps_missing_locality():
+    df = ml.clean_offers(_raw_offers())
+    # D odpada (11 pokoi); brak locality nie przeszkadza przy treningu
+    assert list(df["price_total_zl"]) == [300000, 450000, 1200000]
+
+
+def test_clean_offers_required_locality_drops_missing():
+    df = ml.clean_offers(_raw_offers(), required=(*ml.REQUIRED_COLUMNS, "locality"))
+    assert list(df["locality"]) == ["A", "C"]
+
+
+def test_clean_offers_does_not_mutate_input():
+    raw = _raw_offers()
+    ml.clean_offers(raw)
+    assert raw["price_total_zl"].iloc[0] == "300 000"
