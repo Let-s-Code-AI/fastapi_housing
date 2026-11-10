@@ -1,0 +1,71 @@
+# CI: lint + testy obu serwisów na każdym PR (i pushu do main).
+# Ruleset na main wymaga tylko jednego checka: "ci-ok" – agreguje wynik
+# pozostałych jobów, więc dodanie/zmiana jobów nie wymaga edycji rulesetu.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Instalacja zależności
+        run: uv sync --locked --all-packages
+      - name: Ruff
+        run: uv run ruff check --output-format=github .
+
+  test:
+    name: test (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, ml]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Instalacja zależności
+        run: uv sync --locked --all-packages
+      - name: Pytest
+        run: uv run --directory services/${{ matrix.service }} pytest -v
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sprawdź wynik jobów
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Wyniki: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::Co najmniej jeden job nie przeszedł ($r)"
+              exit 1
+            fi
+          done
