@@ -79,6 +79,13 @@ curl -X GET "$BASE_URL/offers/" \
   -H "accept: application/json" \
   -w "\nStatus: %{http_code}\n"
 
+# 8. Statystyki dzielnicy
+echo ""
+echo "8️⃣ Statystyki dzielnicy:"
+curl -X GET "$BASE_URL/offers/stats?locality=Wrocław%20Krzyki" \
+  -H "accept: application/json" \
+  -w "\nStatus: %{http_code}\n"
+
 echo ""
 echo "✅ Testy zakończone!"
 echo ""

@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
+from statistics import median
 
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import Optional, List
@@ -86,6 +87,41 @@ def search_offers(
     return db.query(models.OfferDB).filter(and_(*filters)).limit(limit).all()
 
 
+# Statystyki dzielnicy
+def offers_stats(
+    locality: str = Query(..., min_length=1, description="Nazwa dzielnicy (dokładne dopasowanie)"),
+    db: Session = Depends(get_db),
+):
+    """Liczba ofert, mediana ceny i mediana ceny za m² dla wskazanej dzielnicy.
+
+    Mediana ceny za m² to mediana z cen za m² poszczególnych ofert.
+
+    Pomija oferty bez ceny lub z niedodatnią powierzchnią. Brak ofert → 404.
+    """
+    name = locality.strip()
+    rows = (
+        db.query(models.OfferDB.price_total_zl, models.OfferDB.area_m2)
+        .filter(
+            and_(
+                models.OfferDB.locality == name,
+                models.OfferDB.price_total_zl.isnot(None),
+                models.OfferDB.area_m2 > 0,
+            )
+        )
+        .all()
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"Brak ofert dla dzielnicy: {name}")
+    prices = [price for price, _ in rows]
+    per_m2 = [price / area for price, area in rows]
+    return {
+        "locality": name,
+        "offers_count": len(prices),
+        "median_price_zl": round(median(prices), 2),
+        "median_price_per_m2_zl": round(median(per_m2), 2),
+    }
+
+
 # Predykcja ceny
 def predict(offer: models.PricePrediction):
     predicted_price = predict_price(offer.area_m2, offer.rooms)
@@ -104,4 +140,6 @@ app.add_api_route("/", root, methods=["GET"])
 app.add_api_route("/offers/", create_offer, methods=["POST"], response_model=models.Offer)
 app.add_api_route("/offers/", read_offers, methods=["GET"], response_model=List[models.Offer])
 app.add_api_route("/offers/search", search_offers, methods=["GET"], response_model=List[models.Offer])
+# /offers/stats przed ewentualnym /offers/{id}, żeby "stats" nie trafiło jako id
+app.add_api_route("/offers/stats", offers_stats, methods=["GET"], response_model=models.OfferStats)
 app.add_api_route("/predict/", predict, methods=["POST"])

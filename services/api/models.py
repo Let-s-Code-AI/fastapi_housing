@@ -33,3 +33,10 @@ class OfferCreate(BaseModel):
 class PricePrediction(BaseModel):
     area_m2: float = Field(gt=0, description="Powierzchnia w m² (większa od 0)")
     rooms: int = Field(ge=1, description="Liczba pokoi (co najmniej 1)")
+
+
+class OfferStats(BaseModel):
+    locality: str
+    offers_count: int
+    median_price_zl: float
+    median_price_per_m2_zl: float
