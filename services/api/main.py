@@ -92,13 +92,15 @@ def offers_stats(
     locality: str = Query(..., min_length=1, description="Nazwa dzielnicy (dokładne dopasowanie)"),
     db: Session = Depends(get_db),
 ):
-    """Liczba ofert i mediana ceny dla wskazanej dzielnicy.
+    """Liczba ofert, mediana ceny i mediana ceny za m² dla wskazanej dzielnicy.
+
+    Mediana ceny za m² to mediana z cen za m² poszczególnych ofert.
 
     Pomija oferty bez ceny lub z niedodatnią powierzchnią. Brak ofert → 404.
     """
     name = locality.strip()
     rows = (
-        db.query(models.OfferDB.price_total_zl)
+        db.query(models.OfferDB.price_total_zl, models.OfferDB.area_m2)
         .filter(
             and_(
                 models.OfferDB.locality == name,
@@ -110,11 +112,13 @@ def offers_stats(
     )
     if not rows:
         raise HTTPException(status_code=404, detail=f"Brak ofert dla dzielnicy: {name}")
-    prices = [r[0] for r in rows]
+    prices = [price for price, _ in rows]
+    per_m2 = [price / area for price, area in rows]
     return {
         "locality": name,
         "offers_count": len(prices),
         "median_price_zl": round(median(prices), 2),
+        "median_price_per_m2_zl": round(median(per_m2), 2),
     }
 
 

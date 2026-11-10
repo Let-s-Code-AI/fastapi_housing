@@ -62,6 +62,7 @@ def test_stats_response_shape(client):
         "locality": "Statowo Kształt",
         "offers_count": 1,
         "median_price_zl": 500000.0,
+        "median_price_per_m2_zl": 10000.0,
     }
 
 
@@ -105,3 +106,19 @@ def test_stats_missing_locality_422(client):
 
 def test_stats_empty_locality_422(client):
     assert _stats(client, "").status_code == 422
+
+
+def test_stats_per_m2_is_median_of_ratios(client):
+    # ceny za m²: 10000, 5000, 15000 → mediana 10000 (iloraz median dałby 5000)
+    _seed("Statowo Metraż", [(200000, 20.0), (300000, 60.0), (900000, 60.0)])
+    assert _stats(client, "Statowo Metraż").json()["median_price_per_m2_zl"] == 10000.0
+
+
+def test_stats_per_m2_even_count(client):
+    _seed("Statowo Metraż Parzyste", [(500000, 50.0), (600000, 50.0)])
+    assert _stats(client, "Statowo Metraż Parzyste").json()["median_price_per_m2_zl"] == 11000.0
+
+
+def test_stats_per_m2_rounded_two_decimals(client):
+    _seed("Statowo Metraż Grosze", [(100000, 30.0)])
+    assert _stats(client, "Statowo Metraż Grosze").json()["median_price_per_m2_zl"] == 3333.33

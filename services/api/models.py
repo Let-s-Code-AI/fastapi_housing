@@ -39,3 +39,4 @@ class OfferStats(BaseModel):
     locality: str
     offers_count: int
     median_price_zl: float
+    median_price_per_m2_zl: float
