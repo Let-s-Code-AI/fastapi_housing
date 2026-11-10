@@ -23,3 +23,4 @@ uv run --directory services/api pytest
 - `POST /offers/` does **not** accept a price — it stores the ML-predicted price in `price_total_zl`. User-added rows contain model output; CSV-loaded rows contain real prices.
 - `create_db.py` appends rows without dedup — rerunning duplicates data. Delete `offers.db` first to reload.
 - `tests/conftest.py` sets `DATABASE_URL` to a temp file **before** `main` is imported, because `main` runs `create_all` at import time. Use `TestClient(app)` as a context manager so `lifespan` runs.
+- Routes are registered with `app.add_api_route(...)` at the bottom of `main.py`, not decorators — mutmut 3 skips decorated functions. Mutation testing: `cd services/api && uv run mutmut run` (results in `plans/mutation.md`).

@@ -66,3 +66,21 @@ def test_lifespan_loads_model_on_startup():
     ml.get_model.cache_clear()
     with TestClient(app):
         assert ml.get_model.cache_info().currsize == 1
+
+
+# --- Testy dopisane po analizie mutmut (plans/mutation.md) ---
+
+def test_root_message_exact(client):
+    # Zabija mutanty zmieniające wielkość liter w komunikacie
+    assert client.get("/").json() == {"message": "API do mieszkań we Wrocławiu"}
+
+
+def test_predict_rounds_to_two_decimals(client, monkeypatch):
+    # Stała cena z wieloma miejscami po przecinku: odróżnia round(x, 2)
+    # od round(x), round(x, None) i round(x, 3)
+    import main
+
+    monkeypatch.setattr(main, "predict_price", lambda area, rooms: 123456.789)
+    body = client.post("/predict/", json={"area_m2": 7.0, "rooms": 2}).json()
+    assert body["predicted_price"] == 123456.79
+    assert body["price_per_m2"] == 17636.68  # 123456.789 / 7 = 17636.684142...
