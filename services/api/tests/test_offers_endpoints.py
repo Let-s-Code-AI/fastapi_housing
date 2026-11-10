@@ -55,3 +55,14 @@ def test_search_price_range(client, offers):
 
 def test_search_limit(client, offers):
     assert len(_search_ids(client, limit=1)) == 1
+
+
+def test_read_offers_shape_and_fresh_results(client, offers):
+    first = client.get("/offers/").json()
+    assert set(first[0]) == {"id", "locality", "rooms", "area_m2", "price_total_zl"}
+
+    new = client.post("/offers/", json={"locality": "Wrocław Świeżo", "rooms": 2, "area_m2": 45.0}).json()
+    second = client.get("/offers/").json()
+    # Bez cache kolejne zapytanie widzi świeżo dodaną ofertę
+    assert new["id"] in {o["id"] for o in second}
+    assert len(second) == len(first) + 1

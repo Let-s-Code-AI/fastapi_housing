@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from functools import lru_cache
 from typing import Optional, List
 
 import models
@@ -45,8 +44,7 @@ def create_offer(offer: models.OfferCreate, db: Session = Depends(get_db)):
     return db_offer
 
 # Pobieranie wszystkich ofert
-@app.get("/offers/")
-@lru_cache(maxsize=32)  # cache’owanie wyników
+@app.get("/offers/", response_model=List[models.Offer])
 def read_offers(db: Session = Depends(get_db)):
     return db.query(models.OfferDB).all()
 
