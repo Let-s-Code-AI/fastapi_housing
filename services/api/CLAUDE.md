@@ -14,14 +14,13 @@ uv run --directory services/api pytest
 ## Modules
 
 - `database.py` — engine/`SessionLocal`/`Base`; URL from `DATABASE_URL`, default `sqlite:///<this dir>/offers.db`.
-- `models.py` — SQLAlchemy `OfferDB` (table `offers`) and Pydantic `Offer`, `OfferCreate`, `PricePrediction`. `Offer` uses Pydantic v1-style `Config.orm_mode` (warns under v2).
-- `main.py` — FastAPI app; `create_all` on import; `get_db` dependency; endpoints `/`, `POST /offers/`, `GET /offers/`, `GET /offers/search` (optional filters combined with `and_`, `limit` ≤ 500), `POST /predict/`.
-- `create_db.py` — creates tables and loads the CSV (`ml.CSV_PATH`).
+- `models.py` — SQLAlchemy `OfferDB` (table `offers`) and Pydantic v2 `Offer` (`from_attributes=True`), `OfferCreate`, `PricePrediction`. Input schemas validate `area_m2 > 0` and `rooms >= 1` (422 otherwise); `Offer` (response) is deliberately unconstrained so legacy rows can't 500.
+- `main.py` — FastAPI app; `create_all` on import; `lifespan` warms up `ml.get_model()` (missing `model.pkl` fails at startup); `get_db` dependency; endpoints `/`, `POST /offers/`, `GET /offers/` (`response_model=List[Offer]`, no cache), `GET /offers/search` (optional filters combined with `and_`, `limit` ≤ 500), `POST /predict/`.
+- `create_db.py` — creates tables and loads the CSV (`ml.CSV_PATH`), cleaned by `ml.clean_offers` with `locality` added to the required columns.
 
 ## Non-obvious behaviors
 
 - `POST /offers/` does **not** accept a price — it stores the ML-predicted price in `price_total_zl`. User-added rows contain model output; CSV-loaded rows contain real prices.
 - `create_db.py` appends rows without dedup — rerunning duplicates data. Delete `offers.db` first to reload.
-- CSV cleaning in `create_db.py` duplicates `ml.load_data` (plus drops missing `locality`); change both together.
-- `GET /offers/` is wrapped in `functools.lru_cache` keyed on the per-request `Session`, so it effectively never hits and retains sessions — don't rely on it as a cache.
-- `tests/conftest.py` sets `DATABASE_URL` to a temp file **before** `main` is imported, because `main` runs `create_all` at import time.
+- `tests/conftest.py` sets `DATABASE_URL` to a temp file **before** `main` is imported, because `main` runs `create_all` at import time. Use `TestClient(app)` as a context manager so `lifespan` runs.
+- Routes are registered with `app.add_api_route(...)` at the bottom of `main.py`, not decorators — mutmut 3 skips decorated functions. Mutation testing: `cd services/api && uv run mutmut run` (results in `plans/mutation.md`).

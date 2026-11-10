@@ -165,3 +165,4 @@ logs/
 *.tmp
 *.temp
 mlruns/
+mutants/
