@@ -31,7 +31,11 @@ uv run --directory services/api pytest
 
 Paths (`model.pkl`, CSV, `offers.db`) are resolved relative to module files, not CWD. The CSV defaults to `<repo>/data/adresowo_wroclaw_all.csv` (override: `HOUSING_CSV_PATH`); the DB defaults to `services/api/offers.db` (override: `DATABASE_URL`). This relies on editable installs — `ml.MODEL_PATH` points into the source tree.
 
-No linter or formatter is configured.
+Lint: `uv run ruff check .` (config in root `pyproject.toml`, rules `E4,E7,E9,F`; no formatter enforced).
+
+## CI
+
+`.github/workflows/ci.yml` runs on every PR and push to `main`: `lint` (ruff), `test (api)`, `test (ml)` (`uv sync --locked`, so `uv.lock` must be up to date). The `ci-ok` job aggregates them and is the **only** required check in the `main` ruleset — add new jobs to its `needs:` instead of editing the ruleset.
 
 ## Commits
 
