@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from database import Base
 
 
@@ -15,14 +15,13 @@ class OfferDB(Base):
 
 # Pydantic schemas
 class Offer(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     locality: str
     rooms: int
     area_m2: float
     price_total_zl: int
-
-    class Config:
-        orm_mode = True
 
 
 class OfferCreate(BaseModel):

@@ -49,3 +49,12 @@ def test_create_offer_and_search(client):
 
     resp = client.get("/offers/search", params={"locality": "testowo", "rooms_min": 4})
     assert offer["id"] not in [o["id"] for o in resp.json()]
+
+
+def test_offer_schema_reads_orm_attributes():
+    from models import Offer, OfferDB
+
+    db_offer = OfferDB(id=1, locality="Wrocław", rooms=2, area_m2=50.0, price_total_zl=500000)
+    assert Offer.model_validate(db_offer).model_dump() == {
+        "id": 1, "locality": "Wrocław", "rooms": 2, "area_m2": 50.0, "price_total_zl": 500000,
+    }
