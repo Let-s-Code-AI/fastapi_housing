@@ -24,7 +24,7 @@ cd FastAPIProject
 
 2. **Zainstaluj zależności:**
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 3. **Utwórz bazę danych:**
@@ -59,7 +59,7 @@ FastAPIProject/
 ├── database.py                     # Konfiguracja bazy danych
 ├── ml.py                          # Model Machine Learning
 ├── create_db.py                   # Skrypt do tworzenia bazy danych
-├── requirements.txt               # Zależności Python
+├── pyproject.toml                 # Konfiguracja projektu i zależności
 ├── offers.db                      # Baza danych SQLite (generowana)
 ├── model.pkl                      # Wytrenowany model ML (generowany)
 └── README.md                      # Ten plik
