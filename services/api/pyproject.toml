@@ -25,3 +25,9 @@ py-modules = ["main", "models", "database", "create_db"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 100
