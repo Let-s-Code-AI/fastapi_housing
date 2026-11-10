@@ -31,12 +31,10 @@ def get_db():
         db.close()
 
 # Root
-@app.get("/")
 def root():
     return {"message": "API do mieszkań we Wrocławiu"}
 
 # Dodawanie oferty
-@app.post("/offers/", response_model=models.Offer)
 def create_offer(offer: models.OfferCreate, db: Session = Depends(get_db)):
     # Przewiduj cenę używając modelu ML
     predicted_price = predict_price(offer.area_m2, offer.rooms)
@@ -54,12 +52,10 @@ def create_offer(offer: models.OfferCreate, db: Session = Depends(get_db)):
     return db_offer
 
 # Pobieranie wszystkich ofert
-@app.get("/offers/", response_model=List[models.Offer])
 def read_offers(db: Session = Depends(get_db)):
     return db.query(models.OfferDB).all()
 
 # Wyszukiwanie ofert
-@app.get("/offers/search", response_model=List[models.Offer])
 def search_offers(
     locality: Optional[str] = Query(None, description="Nazwa miejscowości (częściowe dopasowanie)"),
     rooms_min: Optional[int] = Query(None, ge=1, description="Minimalna liczba pokoi"),
@@ -91,7 +87,6 @@ def search_offers(
 
 
 # Predykcja ceny
-@app.post("/predict/")
 def predict(offer: models.PricePrediction):
     predicted_price = predict_price(offer.area_m2, offer.rooms)
     price_per_m2 = predicted_price / offer.area_m2
@@ -101,3 +96,12 @@ def predict(offer: models.PricePrediction):
         "predicted_price": round(predicted_price, 2),
         "price_per_m2": round(price_per_m2, 2)
     }
+
+
+# Rejestracja tras bez dekoratorów – mutmut 3 pomija funkcje z dekoratorami,
+# więc dzięki add_api_route endpointy podlegają testom mutacyjnym.
+app.add_api_route("/", root, methods=["GET"])
+app.add_api_route("/offers/", create_offer, methods=["POST"], response_model=models.Offer)
+app.add_api_route("/offers/", read_offers, methods=["GET"], response_model=List[models.Offer])
+app.add_api_route("/offers/search", search_offers, methods=["GET"], response_model=List[models.Offer])
+app.add_api_route("/predict/", predict, methods=["POST"])
